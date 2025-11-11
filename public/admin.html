@@ -100,6 +100,16 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    #loginScreen {
+      text-align: center;
+      margin-top: 80px;
+    }
+    #loginScreen input {
+      padding: 10px;
+      width: 250px;
+      border: 1px solid #90caf9;
+      border-radius: 10px;
+    }
   </style>
 </head>
 <body>
@@ -108,12 +118,22 @@
     <h1>Admin Panel - Safety Scoreboard Galon BPN</h1>
   </header>
 
-  <div class="container">
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen">
+    <h2>🔐 Login Admin</h2>
+    <input type="password" id="adminPassword" placeholder="Masukkan password admin" />
+    <br><br>
+    <button id="loginBtn">Login</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="container" id="dashboard" style="display:none;">
     <div class="timer" id="timer">00 Hari 00 Jam 00 Menit 00 Detik</div>
     <div class="controls">
       <button id="startBtn">Mulai</button>
       <button id="stopBtn">Berhenti</button>
       <button id="resetBtn">Reset</button>
+      <button id="logoutBtn" style="background:#ff9800;">Logout</button>
     </div>
 
     <div class="card">
@@ -133,12 +153,42 @@
   <script>
     const socket = io();
     const timer = document.getElementById("timer");
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
-    const resetBtn = document.getElementById("resetBtn");
-    const addIncidentBtn = document.getElementById("addIncidentBtn");
-    const incidentNote = document.getElementById("incidentNote");
+    const dashboard = document.getElementById("dashboard");
+    const loginScreen = document.getElementById("loginScreen");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
     const incidentList = document.getElementById("incidentList");
+
+    async function checkLogin() {
+      const res = await fetch("/admin/check");
+      const data = await res.json();
+      if (data.loggedIn) {
+        loginScreen.style.display = "none";
+        dashboard.style.display = "block";
+      }
+    }
+    checkLogin();
+
+    loginBtn.onclick = async () => {
+      const password = document.getElementById("adminPassword").value;
+      const res = await fetch("/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        loginScreen.style.display = "none";
+        dashboard.style.display = "block";
+      } else {
+        alert("Password salah!");
+      }
+    };
+
+    logoutBtn.onclick = async () => {
+      await fetch("/admin/logout", { method: "POST" });
+      dashboard.style.display = "none";
+      loginScreen.style.display = "block";
+    };
 
     socket.on("update", (state) => {
       timer.textContent = 
@@ -154,7 +204,6 @@
         incidentList.appendChild(li);
         return;
       }
-
       incidents.slice().reverse().forEach((inc) => {
         const li = document.createElement("li");
         li.innerHTML = `
@@ -165,20 +214,18 @@
       });
     }
 
-    startBtn.onclick = () => socket.emit("start");
-    stopBtn.onclick = () => socket.emit("stop");
-    resetBtn.onclick = () => socket.emit("reset");
-
-    addIncidentBtn.onclick = () => {
-      const note = incidentNote.value.trim();
+    document.getElementById("startBtn").onclick = () => socket.emit("start");
+    document.getElementById("stopBtn").onclick = () => socket.emit("stop");
+    document.getElementById("resetBtn").onclick = () => socket.emit("reset");
+    document.getElementById("addIncidentBtn").onclick = () => {
+      const note = document.getElementById("incidentNote").value.trim();
       if (note) {
         socket.emit("addIncident", note);
-        incidentNote.value = "";
+        document.getElementById("incidentNote").value = "";
       } else {
         alert("Catatan insiden tidak boleh kosong!");
       }
     };
-
     window.deleteIncident = (id) => {
       if (confirm("Hapus insiden ini?")) socket.emit("deleteIncident", id);
     };
