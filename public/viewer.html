@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safety Scoreboard Galon BPN</title>
+<script src="/socket.io/socket.io.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(145deg, #eef2f5, #d7dde5);
+  color: #1f2d3d;
+  min-height: 100vh;
+}
+
+/* HEADER */
+header {
+  background-color: #2c3e50;
+  color: #fff;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+header img {
+  height: 55px;
+  margin-right: 20px;
+}
+header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+header p {
+  margin: 0;
+  opacity: 0.8;
+  font-size: 0.95rem;
+}
+
+.datetime {
+  text-align: right;
+  color: #f5f6fa;
+  font-weight: 600;
+}
+.datetime .date {
+  font-size: 0.95rem;
+  letter-spacing: 0.5px;
+  color: #dcdde1;
+}
+.datetime .clock {
+  font-size: 1.6rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, #00b894, #00cec9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 10px rgba(0,255,200,0.3);
+}
+.datetime .zone {
+  font-size: 0.9rem;
+  color: #b2bec3;
+  margin-left: 6px;
+}
+
+/* CONTAINER */
+.container {
+  max-width: 950px;
+  margin: 50px auto;
+  padding: 40px;
+  background: #ffffff;
+  border-radius: 25px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+
+/* TIMER */
+.timer {
+  text-align: center;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 25px;
+  letter-spacing: 1px;
+  background: linear-gradient(90deg, #6c5ce7, #00b894);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  transition: all 0.5s ease;
+}
+
+/* STATS */
+.stats {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 40px;
+}
+.stats p {
+  background: #f0f4f8;
+  padding: 20px 25px;
+  border-radius: 15px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+  flex: 1;
+  margin: 0 10px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+.stats p:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.1);
+}
+
+/* CARD */
+.card {
+  background: linear-gradient(145deg, #ffffff, #f5f7fa);
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+  transition: all 0.3s ease;
+}
+.card h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-weight: 700;
+  color: #2c3e50;
+  border-bottom: 2px solid #00b894;
+  display: inline-block;
+  padding-bottom: 5px;
+}
+
+/* INCIDENT LIST */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+li {
+  background: #f0f4f8;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin: 10px 0;
+  font-size: 1rem;
+  color: #2c3e50;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+li:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+@media(max-width:768px) {
+  .stats {
+    flex-direction: column;
+    align-items: center;
+  }
+  .stats p {
+    margin: 8px 0;
+    width: 80%;
+  }
+}
+</style>
+</head>
+
+<body>
+<header>
+  <div style="display:flex;align-items:center;">
+    <img src="BPN.png" alt="BPN Logo">
+    <div>
+      <h1>Safety Scoreboard Galon BPN</h1>
+      <p>Departemen K3 • PT. BPN</p>
+    </div>
+  </div>
+
+  <!-- Waktu realtime -->
+  <div class="datetime">
+    <div class="date" id="date">Senin, 11 November 2025</div>
+    <div class="clock">
+      <span id="clock">00:00:00</span>
+      <span class="zone" id="zone">WIB</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="timer" id="timer">00 Hari 00 Jam 00 Menit 00 Detik</div>
+
+  <div class="stats">
+    <p>📜 Catatan Insiden: <span id="incidentCount">0</span></p>
+    <p>🏆 Streak Aman Terlama: <span id="bestDays">0</span> Hari</p>
+    <p>📅 Mulai Penghitungan: <span id="startDate">-</span></p>
+  </div>
+
+  <div class="card">
+    <h3>Riwayat Insiden Terbaru</h3>
+    <ul id="incidentList">
+      <li>Belum ada insiden tercatat. Sistem berjalan mulus 🎉</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const socket = io();
+const timer = document.getElementById("timer");
+const incidentList = document.getElementById("incidentList");
+const incidentCount = document.getElementById("incidentCount");
+const bestDays = document.getElementById("bestDays");
+const startDate = document.getElementById("startDate");
+const clock = document.getElementById("clock");
+const dateElement = document.getElementById("date");
+const zoneElement = document.getElementById("zone");
+
+// ==========================
+//  ZONA WAKTU INDONESIA
+// ==========================
+// WIB = 7 | WITA = 8 | WIT = 9
+const timeZoneOffsetHours = 7;
+const zoneLabel = timeZoneOffsetHours === 7 ? "WIB" :
+                  timeZoneOffsetHours === 8 ? "WITA" : "WIT";
+zoneElement.textContent = zoneLabel;
+
+// Update waktu real-time
+function updateDateTime() {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  const localTime = new Date(utc + 3600000 * timeZoneOffsetHours);
+
+  const days = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+  const months = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
+  const dayName = days[localTime.getDay()];
+  const date = localTime.getDate();
+  const month = months[localTime.getMonth()];
+  const year = localTime.getFullYear();
+
+  const h = String(localTime.getHours()).padStart(2,'0');
+  const m = String(localTime.getMinutes()).padStart(2,'0');
+  const s = String(localTime.getSeconds()).padStart(2,'0');
+
+  clock.textContent = `${h}:${m}:${s}`;
+  dateElement.textContent = `${dayName}, ${date} ${month} ${year}`;
+}
+setInterval(updateDateTime, 1000);
+updateDateTime();
+
+// ==========================
+//  SOCKET.IO UPDATE
+// ==========================
+socket.on("update", (state) => {
+  timer.textContent = `${state.days} Hari ${state.hours} Jam ${state.minutes} Menit ${state.seconds} Detik`;
+  incidentCount.textContent = state.incidentsCount || 0;
+  bestDays.textContent = state.bestDays || 0;
+  startDate.textContent = new Date(state.startDate).toLocaleDateString("id-ID");
+  renderIncidents(state.incidents);
+});
+
+function renderIncidents(incidents) {
+  incidentList.innerHTML = "";
+  if (!incidents || incidents.length === 0) {
+    incidentList.innerHTML = "<li>Belum ada insiden tercatat. Sistem berjalan mulus 🎉</li>";
+    return;
+  }
+  incidents.slice().reverse().forEach(inc => {
+    const li = document.createElement("li");
+    li.textContent = `📍 ${new Date(inc.date).toLocaleString("id-ID")} — ${inc.note}`;
+    incidentList.appendChild(li);
+  });
+}
+</script>
+</body>
+</html>
