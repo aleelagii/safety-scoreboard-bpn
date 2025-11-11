@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 const io = new Server(server);
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; // ✅ Railway otomatis kasih PORT
 
 // ===== STATE =====
 const STATE_FILE = "./state.json";
@@ -29,7 +29,7 @@ if (fs.existsSync(STATE_FILE)) {
   try {
     state = JSON.parse(fs.readFileSync(STATE_FILE));
   } catch (err) {
-    console.error("Gagal baca state:", err);
+    console.error("⚠️ Gagal membaca file state:", err);
   }
 }
 
@@ -42,7 +42,7 @@ app.use(express.json());
 app.use(express.static("public"));
 app.use(
   session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "default_secret",
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 1000 * 60 * 60 * 6 },
@@ -50,6 +50,14 @@ app.use(
 );
 
 // ===== ROUTES =====
+app.get("/", (req, res) => {
+  res.sendFile("viewer.html", { root: "public" });
+});
+
+app.get("/admin", (req, res) => {
+  res.sendFile("admin.html", { root: "public" });
+});
+
 app.post("/admin/login", (req, res) => {
   const { password } = req.body;
   if (password === process.env.ADMIN_PASS) {
@@ -144,4 +152,8 @@ setInterval(() => {
   }
 }, 1000);
 
-server.listen(PORT, () => console.log(`✅ Safety Scoreboard berjalan di http://localhost:${PORT}`));
+// ✅ Jalankan server
+server.listen(PORT, () => {
+  console.log(`✅ Safety Scoreboard berjalan di port ${PORT}`);
+  console.log("🌐 Akses scoreboard kamu di browser Railway setelah deploy ulang 🚀");
+});
